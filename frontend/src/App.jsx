@@ -9,6 +9,21 @@ import TableQrCodes from './pages/TableQrCodes';
 
 function App() {
   const [tableBills, setTableBills] = useState({});
+  const [tableDrafts, setTableDrafts] = useState({});
+
+  const updateTableDraft = (tableNumber, update) => {
+    const tableKey = String(tableNumber);
+
+    setTableDrafts((prev) => {
+      const currentDraft = prev[tableKey] || { customerName: '', cart: [] };
+      const nextDraft = typeof update === 'function' ? update(currentDraft) : update;
+
+      return {
+        ...prev,
+        [tableKey]: nextDraft
+      };
+    });
+  };
 
   const mergeBillItems = (existingItems, newItems) => {
     const merged = [...existingItems];
@@ -55,6 +70,8 @@ function App() {
             <CustomerMenu
               tableBills={tableBills}
               addOrderToTableBill={addOrderToTableBill}
+              tableDrafts={tableDrafts}
+              updateTableDraft={updateTableDraft}
             />
           }
         />

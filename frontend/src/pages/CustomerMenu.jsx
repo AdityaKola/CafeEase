@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useParams } from 'react-router-dom';
 import { API_BASE } from '../config/api';
@@ -18,14 +18,29 @@ function CustomerMenu(props) {
   const isTableFixed = Number.isInteger(routeTable) && routeTable > 0;
 
   const [filter, setFilter] = useState("All");
-  const [cart, setCart] = useState([]);
   const [cartOrderMsg, setCartOrderMsg] = useState("");
-  const [cartName, setCartName] = useState("");
   const [cartTable, setCartTable] = useState(isTableFixed ? String(routeTable) : "");
   const [menuItems, setMenuItems] = useState(defaultMenuItems);
-  const previousTableRef = useRef();
 
   const currentTableKey = String(routeTable || "");
+  const currentDraft = props.tableDrafts?.[currentTableKey] || { customerName: "", cart: [] };
+  const cart = currentDraft.cart || [];
+  const cartName = currentDraft.customerName || "";
+
+  const setCart = (update) => {
+    props.updateTableDraft?.(currentTableKey, (draft) => ({
+      ...draft,
+      cart: typeof update === "function" ? update(draft.cart || []) : update
+    }));
+  };
+
+  const setCartName = (customerName) => {
+    props.updateTableDraft?.(currentTableKey, (draft) => ({
+      ...draft,
+      customerName
+    }));
+  };
+
   const currentTableBill = props.tableBills?.[currentTableKey] || { items: [], total: 0 };
   const menuPriceMap = Object.fromEntries(menuItems.map((item) => [item.name, item.price]));
 
@@ -34,11 +49,6 @@ function CustomerMenu(props) {
       setCartTable(String(routeTable));
     }
 
-    if (previousTableRef.current !== undefined && previousTableRef.current !== routeTable) {
-      setCartName("");
-    }
-
-    previousTableRef.current = routeTable;
   }, [routeTable, isTableFixed]);
 
   useEffect(() => {
