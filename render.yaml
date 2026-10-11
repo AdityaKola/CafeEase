@@ -2,6 +2,7 @@ services:
   - type: web
     name: cafeease-api
     runtime: docker
+    plan: free
     rootDir: backend
     healthCheckPath: /api/menu
     envVars:
