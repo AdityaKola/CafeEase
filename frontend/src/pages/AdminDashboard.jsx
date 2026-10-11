@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../config/api';
 
 const emptyForm = {
@@ -11,7 +11,9 @@ const emptyForm = {
 };
 
 function AdminDashboard() {
-  const [token, setToken] = useState(localStorage.getItem('chefToken') || '');
+  const navigate = useNavigate();
+  const [token, setToken] = useState('');
+  const tokenRef = useRef('');
   const [menuItems, setMenuItems] = useState([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -28,13 +30,28 @@ function AdminDashboard() {
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem('chefToken', token);
       fetchMenuItems();
     } else {
-      localStorage.removeItem('chefToken');
       setMenuItems([]);
     }
   }, [token]);
+
+  useEffect(() => {
+    // Remove tokens created by older versions of the dashboard.
+    localStorage.removeItem('chefToken');
+
+    return () => {
+      const activeToken = tokenRef.current;
+      tokenRef.current = '';
+      localStorage.removeItem('chefToken');
+
+      if (activeToken) {
+        axios.post(`${API_BASE}/chef/logout`, {}, {
+          headers: { Authorization: `Bearer ${activeToken}` }
+        }).catch(() => {});
+      }
+    };
+  }, []);
 
   const showAlert = (msg, type = 'success') => {
     setAlertMsg(msg);
@@ -64,6 +81,7 @@ function AdminDashboard() {
         username: username.trim(),
         password
       });
+      tokenRef.current = res.data.token;
       setToken(res.data.token);
       setUsername('');
       setPassword('');
@@ -74,16 +92,33 @@ function AdminDashboard() {
   };
 
   const handleLogout = async () => {
+    const activeToken = tokenRef.current || token;
+    tokenRef.current = '';
+    setToken('');
+
     try {
-      if (token) {
+      if (activeToken) {
         await axios.post(`${API_BASE}/chef/logout`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${activeToken}` }
         });
       }
     } finally {
-      setToken('');
       showAlert('Logged out.');
     }
+  };
+
+  const handleExit = () => {
+    const activeToken = tokenRef.current || token;
+    tokenRef.current = '';
+    setToken('');
+
+    if (activeToken) {
+      axios.post(`${API_BASE}/chef/logout`, {}, {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      }).catch(() => {});
+    }
+
+    navigate('/');
   };
 
   const handleInputChange = (e) => {
@@ -168,7 +203,7 @@ function AdminDashboard() {
               Logout
             </button>
           )}
-          <Link to="/" className="btn btn-outline-dark btn-sm">Back to Home</Link>
+          <button type="button" className="btn btn-outline-dark btn-sm" onClick={handleExit}>Back to Home</button>
         </div>
       </div>
 

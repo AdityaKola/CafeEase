@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../config/api';
 
 function KitchenDashboard() {
-  const [token, setToken] = useState(localStorage.getItem("chefToken") || "");
+  const navigate = useNavigate();
+  const [token, setToken] = useState("");
+  const tokenRef = useRef("");
   const [orders, setOrders] = useState([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -15,15 +17,30 @@ function KitchenDashboard() {
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem("chefToken", token);
       fetchOrders();
       const interval = setInterval(fetchOrders, 5000);
       return () => clearInterval(interval);
     } else {
-      localStorage.removeItem("chefToken");
       setOrders([]);
     }
   }, [token]);
+
+  useEffect(() => {
+    // Remove tokens created by older versions of the dashboard.
+    localStorage.removeItem("chefToken");
+
+    return () => {
+      const activeToken = tokenRef.current;
+      tokenRef.current = "";
+      localStorage.removeItem("chefToken");
+
+      if (activeToken) {
+        axios.post(`${API_BASE}/chef/logout`, {}, {
+          headers: { Authorization: `Bearer ${activeToken}` }
+        }).catch(() => {});
+      }
+    };
+  }, []);
 
   const showAlert = (msg, isError = false) => {
     setAlertMsg(msg);
@@ -50,6 +67,7 @@ function KitchenDashboard() {
     e.preventDefault();
     try {
       const res = await axios.post(`${API_BASE}/chef/login`, { username: username.trim(), password });
+      tokenRef.current = res.data.token;
       setToken(res.data.token);
       showAlert("Login successful.");
       setUsername("");
@@ -60,16 +78,33 @@ function KitchenDashboard() {
   };
 
   const handleLogout = async () => {
+    const activeToken = tokenRef.current || token;
+    tokenRef.current = "";
+    setToken("");
+
     try {
-      if (token) {
+      if (activeToken) {
         await axios.post(`${API_BASE}/chef/logout`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${activeToken}` }
         });
       }
     } finally {
-      setToken("");
       showAlert("Logged out.");
     }
+  };
+
+  const handleExit = () => {
+    const activeToken = tokenRef.current || token;
+    tokenRef.current = "";
+    setToken("");
+
+    if (activeToken) {
+      axios.post(`${API_BASE}/chef/logout`, {}, {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      }).catch(() => {});
+    }
+
+    navigate('/');
   };
 
   const updateStatus = async (id, status) => {
@@ -102,7 +137,7 @@ function KitchenDashboard() {
           {isLoggedIn && (
             <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>Logout</button>
           )}
-          <Link to="/" className="btn btn-outline-dark btn-sm">Back to Menu</Link>
+          <button type="button" className="btn btn-outline-dark btn-sm" onClick={handleExit}>Back to Menu</button>
         </div>
       </div>
 
