@@ -188,7 +188,6 @@ function AdminDashboard() {
               <button className="btn btn-dark" type="submit">Login</button>
             </div>
           </form>
-          <p className="small text-muted mt-2 mb-0">Default login: chef / admin123</p>
         </section>
       ) : (
         <div className="row g-4">
