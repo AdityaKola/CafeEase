@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useParams } from 'react-router-dom';
+import { API_BASE } from '../config/api';
 
 const defaultMenuItems = [
   { id: 1, name: "Cappuccino", category: "Beverages", price: 120, description: "Espresso with steamed milk foam." },
@@ -10,8 +11,6 @@ const defaultMenuItems = [
   { id: 5, name: "Paneer Wrap", category: "Snacks", price: 150, description: "Soft wrap with paneer filling." },
   { id: 6, name: "Brownie", category: "Desserts", price: 90, description: "Warm chocolate brownie square." }
 ];
-
-const API_BASE = "http://localhost:8080/api";
 
 function CustomerMenu(props) {
   const { tableNumber } = useParams();

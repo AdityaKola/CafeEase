@@ -1,0 +1,4 @@
+backend/server.log
+backend/server.err.log
+frontend/client.log
+frontend/client.err.log

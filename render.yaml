@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: cafeease-api
+    runtime: docker
+    rootDir: backend
+    healthCheckPath: /api/menu
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

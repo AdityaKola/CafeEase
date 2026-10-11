@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
-const API_BASE = "http://localhost:8080/api";
+import { API_BASE } from '../config/api';
 
 function KitchenDashboard() {
   const [token, setToken] = useState(localStorage.getItem("chefToken") || "");
