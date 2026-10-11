@@ -1,0 +1,35 @@
+:root {
+  --bg: #f5efe6;
+  --card: #fffaf3;
+  --text: #2e2318;
+  --accent: #875f3b;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(180deg, #fbf6ee 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+.hero {
+  background: radial-gradient(circle at top left, #f6d6aa, #e8b97f 60%, #d9a062);
+  color: #2c1b0f;
+  border-bottom: 2px solid #c38a4e;
+}
+
+.menu-card {
+  background: var(--card);
+  border: 1px solid #ecdcc5;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(46, 35, 24, 0.08);
+}
+
+.price {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+#orderMsg {
+  color: #3c6e47;
+}
