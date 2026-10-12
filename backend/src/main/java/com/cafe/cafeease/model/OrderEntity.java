@@ -14,6 +14,8 @@ public class OrderEntity {
     private String customerName;
     private Integer tableNumber;
     private String type;
+    @Column(unique = true)
+    private String clientRequestId;
     private Double total;
     private String status;
     private LocalDateTime createdAt;
@@ -32,6 +34,8 @@ public class OrderEntity {
     public void setTableNumber(Integer tableNumber) { this.tableNumber = tableNumber; }
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+    public String getClientRequestId() { return clientRequestId; }
+    public void setClientRequestId(String clientRequestId) { this.clientRequestId = clientRequestId; }
     public Double getTotal() { return total; }
     public void setTotal(Double total) { this.total = total; }
     public String getStatus() { return status; }

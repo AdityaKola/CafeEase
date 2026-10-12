@@ -56,15 +56,23 @@ public class OrderController {
     }
 
     @PostMapping("/orders")
-    public ResponseEntity<?> createOrder(@RequestBody OrderRequest req) {
+    public synchronized ResponseEntity<?> createOrder(@RequestBody OrderRequest req) {
         if (req.getItems() == null || req.getItems().isEmpty()) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Invalid order payload"));
+        }
+
+        if (req.getClientRequestId() != null && !req.getClientRequestId().isBlank()) {
+            Optional<OrderEntity> existingOrder = orderRepository.findByClientRequestId(req.getClientRequestId());
+            if (existingOrder.isPresent()) {
+                return ResponseEntity.ok(Collections.singletonMap("order", existingOrder.get()));
+            }
         }
 
         OrderEntity order = new OrderEntity();
         order.setCustomerName(req.getCustomerName() != null ? req.getCustomerName() : "Guest");
         order.setTableNumber(req.getTableNumber() != null && req.getTableNumber() > 0 ? req.getTableNumber() : null);
         order.setType(req.getType());
+        order.setClientRequestId(req.getClientRequestId());
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus("Placed");
 

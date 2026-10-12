@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../config/api';
+import { postWithWakeRetry } from '../config/resilientApi';
 
 const emptyForm = {
   name: '',
@@ -23,6 +24,7 @@ function AdminDashboard() {
   const [editingId, setEditingId] = useState(null);
   const [alertMsg, setAlertMsg] = useState('');
   const [alertType, setAlertType] = useState('success');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const existingCategories = [...new Set(menuItems.map((item) => item.category?.trim()).filter(Boolean))];
   const categoryOptions = existingCategories.length
     ? existingCategories
@@ -76,18 +78,30 @@ function AdminDashboard() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isLoggingIn) return;
+
     try {
-      const res = await axios.post(`${API_BASE}/chef/login`, {
+      setIsLoggingIn(true);
+      const res = await postWithWakeRetry(`${API_BASE}/chef/login`, {
         username: username.trim(),
         password
+      }, {}, () => {
+        showAlert('The server is waking up. Login will retry automatically...', 'success');
       });
       tokenRef.current = res.data.token;
       setToken(res.data.token);
       setUsername('');
       setPassword('');
       showAlert('Login successful.');
-    } catch {
-      showAlert('Invalid username or password.', 'error');
+    } catch (error) {
+      showAlert(
+        error.response?.status === 401
+          ? 'Invalid username or password.'
+          : 'Could not reach the server after several attempts. Please try again shortly.',
+        'error'
+      );
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -220,7 +234,9 @@ function AdminDashboard() {
               <input id="adminPass" className="form-control" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <div className="col-md-2 d-grid align-items-end">
-              <button className="btn btn-dark" type="submit">Login</button>
+              <button className="btn btn-dark" type="submit" disabled={isLoggingIn}>
+                {isLoggingIn ? 'Connecting...' : 'Login'}
+              </button>
             </div>
           </form>
         </section>

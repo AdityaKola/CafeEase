@@ -7,6 +7,7 @@ public class OrderRequest {
     private String customerName;
     private Integer tableNumber;
     private String type;
+    private String clientRequestId;
     private List<OrderItem> items;
 
     // getters and setters
@@ -16,6 +17,8 @@ public class OrderRequest {
     public void setTableNumber(Integer tableNumber) { this.tableNumber = tableNumber; }
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+    public String getClientRequestId() { return clientRequestId; }
+    public void setClientRequestId(String clientRequestId) { this.clientRequestId = clientRequestId; }
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
 }

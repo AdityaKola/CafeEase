@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useParams } from 'react-router-dom';
 import { API_BASE } from '../config/api';
+import { postWithWakeRetry } from '../config/resilientApi';
 
 const defaultMenuItems = [
   { id: 1, name: "Cappuccino", category: "Beverages", price: 120, description: "Espresso with steamed milk foam." },
@@ -19,6 +20,7 @@ function CustomerMenu(props) {
 
   const [filter, setFilter] = useState("All");
   const [cartOrderMsg, setCartOrderMsg] = useState("");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [cartTable, setCartTable] = useState(isTableFixed ? String(routeTable) : "");
   const [menuItems, setMenuItems] = useState(defaultMenuItems);
 
@@ -108,7 +110,7 @@ function CustomerMenu(props) {
   };
 
   const placeCartOrder = async () => {
-    if (!cart.length) return;
+    if (!cart.length || isPlacingOrder) return;
 
     const resolvedTableNumber = isTableFixed ? routeTable : Number(cartTable);
 
@@ -118,7 +120,9 @@ function CustomerMenu(props) {
     }
 
     try {
+      setIsPlacingOrder(true);
       const payload = {
+        clientRequestId: crypto.randomUUID(),
         customerName: cartName.trim(),
         tableNumber: resolvedTableNumber,
         type: "Cart",
@@ -129,7 +133,9 @@ function CustomerMenu(props) {
         }))
       };
 
-      await axios.post(`${API_BASE}/orders`, payload);
+      await postWithWakeRetry(`${API_BASE}/orders`, payload, {}, () => {
+        setCartOrderMsg("The server is waking up. Your order will retry automatically...");
+      });
 
       const totalItems = cart.reduce((sum, entry) => sum + entry.qty, 0);
       const orderTotal = cart.reduce((sum, entry) => sum + entry.price * entry.qty, 0);
@@ -146,7 +152,9 @@ function CustomerMenu(props) {
         setCartTable("");
       }
     } catch {
-      setCartOrderMsg("Could not place order. Please try again.");
+      setCartOrderMsg("Could not reach the server after several attempts. Please try again shortly.");
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -167,11 +175,14 @@ function CustomerMenu(props) {
     try {
       const orderTotal = (menuPriceMap[item] || 0) * qty;
       const singleItem = { name: item, qty, price: menuPriceMap[item] || 0 };
-      await axios.post(`${API_BASE}/orders`, {
+      await postWithWakeRetry(`${API_BASE}/orders`, {
+        clientRequestId: crypto.randomUUID(),
         customerName: name,
         tableNumber: table,
         type: "Quick Form",
         items: [singleItem]
+      }, {}, () => {
+        document.getElementById("orderMsg").textContent = "The server is waking up. Retrying your order automatically...";
       });
 
       props.addOrderToTableBill?.(table, [singleItem], orderTotal);
@@ -247,9 +258,9 @@ function CustomerMenu(props) {
                     className="btn btn-sm btn-dark"
                     onClick={placeCartOrder}
                     type="button"
-                    disabled={!cart.length}
+                    disabled={!cart.length || isPlacingOrder}
                   >
-                    Place Order
+                    {isPlacingOrder ? "Placing Order..." : "Place Order"}
                   </button>
                   <button
                     className="btn btn-sm btn-outline-danger"
